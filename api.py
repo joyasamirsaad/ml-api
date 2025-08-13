@@ -9,8 +9,8 @@ app = FastAPI()
 
 # POST Request
 @app.post("/frame") # api endpoint
-async def upload_file(file: UploadFile = File(...)): # --google
-    if not file.filename.endswith(('.png', '.jpg', '.jpeg')): # --auto-generated
+async def upload_file(file: UploadFile = File(...)): 
+    if not file.filename.endswith(('.png', '.jpg', '.jpeg')): 
         return {"error": "Invalid file type. Only PNG and JPG files are allowed."}
     
     # saving the uploaded file 
@@ -28,9 +28,9 @@ async def upload_file(file: UploadFile = File(...)): # --google
 async def detection(image_path: Path, image_name: str):
     # model
     model = YOLO("yolov8n.pt") # trained with coco8.yaml dataset
-    results = model(image_path) # detecting & saving the new image
+    results = model(image_path) # detecting; if save=True -> saved in runs/predict
     results[0].show() # showing the new image
-    results[0].save(filename=f"detection_{image_name}")
+    results[0].save(filename=f"detection_{image_name}") # saving the new image
     
     #objects = results[0].to_json()
     objects = [] 
