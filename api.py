@@ -5,8 +5,6 @@ from ultralytics import YOLO
 # creating instance of the FastAPI application
 app = FastAPI()
 
-#file_location: Path = None
-
 # POST Request
 @app.post("/frame") # api endpoint
 async def upload_file(file: UploadFile = File(...)): 
@@ -45,23 +43,9 @@ async def detection(image_path: Path, image_name: str):
             "bbox": bbox
         })
 
-    global detection_result
     detection_result = {
-        "image_path": str(f"{image_name}_detection"),
+        "image_path": str(f"detection_{image_name}"),
         "objects_detected": objects
     }
 
     return { "detection_result": detection_result }
-
-# GET Request
-@app.get("/frame") # api enpoint
-async def display():
-    global detection_result
-    return detection_result
-""" @app.get("/frame") # api endpoint
-async def read_root():
-    global file_location
-    
-    if not file_location.is_file():
-        return {"error": "Image not found on the server"}
-    return FileResponse(file_location)  """

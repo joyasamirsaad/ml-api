@@ -202,5 +202,5 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-
+# model
 yolov8n.pt
