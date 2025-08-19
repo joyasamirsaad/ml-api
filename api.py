@@ -89,17 +89,23 @@ async def vid_detection(video_path: Path, video_name: str, fps: int):
     objects = [] 
     labels = []
     framenb = 0
+    c = 0
     for r in results:
         #r.save(filename=f"detection_{video_name}")
         timestamp = framenb / fps
         for box in r.boxes:
-            if box is None or  box.id is None: continue
-            box_id = int(box.id)  # get the unique ID of the object
+            if box is None: 
+                continue
+            if box.id is None: 
+                box_id = -c
+                c += 1
+            else:
+                box_id = int(box.id)  # get the unique ID of the object
             idx = int(box.cls)       
             conf = float(box.conf)   
             bbox = box.xyxy.tolist()[0]
             label = model.names[idx]
-            if not any(l["label"] == label and l["id"] == box_id for l in labels):
+            if not any(l["label"] == label and l["id"] == box_id for l in labels): 
                 labels.append({
                     "label": label,
                     "id": box_id
@@ -177,7 +183,8 @@ async def heatmap(file: UploadFile = File(...)):
     }
 
 def heatmap_image(data, video_name: str):
-    frame_x = cv2.imread(f"detect/{video_name}_frames/1.jpg")
+    #frame_x = cv2.imread(f"detect/{video_name}_frames/1.jpg")
+    frame_x = cv2.imread(str(sorted(Path(f"detect/{video_name}_frames").glob("*.jpg"))[0]))  # reading the first frame of the video
     video_height, video_width = frame_x.shape[:2] 
     # 2D array for heatmap, initializing heatmap array with zeros
     heatmap_data = np.zeros((video_height, video_width), dtype=np.float32)
@@ -190,13 +197,23 @@ def heatmap_image(data, video_name: str):
             x_max, y_max = min(video_width-1, x_max), min(video_height-1, y_max)
             # increment heatmap in bbox region
             heatmap_data[y_min:y_max+1, x_min:x_max+1] += 1
+            print("BBox size:", x_max - x_min, y_max - y_min)
     
     # using cv2 to create a heatmap overlay
     # normalize heatmap
     heatmap_normalized = cv2.normalize(heatmap_data, None, 0, 255, cv2.NORM_MINMAX)
-    heatmap_normalized = heatmap_normalized.astype(np.uint8)
+    heatmap_normalized = np.clip(heatmap_normalized, 0, 255).astype(np.uint8)
+    
+    print("Heatmap data", heatmap_data)
+    print("Heatmap normalized", heatmap_normalized)
+    # cv2.imshow("Heatmap Data", heatmap_normalized)  
+    # cv2.waitKey(0)  
+    # cv2.destroyAllWindows()
 
     heatmap_color = cv2.applyColorMap(heatmap_normalized, cv2.COLORMAP_HOT)
+    # cv2.imshow("Heatmap Color", heatmap_color)  
+    # cv2.waitKey(0)  
+    # cv2.destroyAllWindows()
 
     # resizing the frame to the same dimensions as the video before overlaying
     frame_x = cv2.resize(frame_x, (video_width, video_height))
