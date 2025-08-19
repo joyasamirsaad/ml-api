@@ -93,6 +93,7 @@ async def vid_detection(video_path: Path, video_name: str, fps: int):
         #r.save(filename=f"detection_{video_name}")
         timestamp = framenb / fps
         for box in r.boxes:
+            if box is None or  box.id is None: continue
             box_id = int(box.id)  # get the unique ID of the object
             idx = int(box.cls)       
             conf = float(box.conf)   
