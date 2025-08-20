@@ -204,3 +204,10 @@ __marimo__/
 
 # model
 yolov8n.pt
+
+# video directories
+videos/
+detect/
+
+# heatmap directories
+heatmaps/
