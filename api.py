@@ -1,11 +1,12 @@
 from pathlib import Path
 import cv2
-from fastapi import FastAPI , UploadFile, File
+from fastapi import FastAPI , UploadFile, File, BackgroundTasks
 from matplotlib import pyplot as plt
 import numpy as np
 from ultralytics import YOLO
 from moviepy import VideoFileClip
 import json
+from train import train
 
 # creating instance of the FastAPI application
 app = FastAPI()
@@ -30,10 +31,12 @@ async def upload_file(file: UploadFile = File(...)):
 
 async def detection(image_path: Path, image_name: str):
     # model
-    model = YOLO("yolov8n.pt") # trained with coco8.yaml dataset
-    results = model(image_path) # detecting; if save=True -> saved in runs/predict
+    # model = YOLO("yolov8n.pt") # trained with coco8.yaml dataset
+    # results = model(image_path) # detecting; if save=True -> saved in runs/predict
+    model = YOLO("models/yolov8n_custom/weights/best.pt") # trained with custom dataset
+    results = model.predict(source = image_path, save=True, save_dir="image_detection")
     results[0].show() # showing the new image
-    results[0].save(filename=f"detection_{image_name}") # saving the new image
+    # results[0].save(filename=f"detection_{image_name}") # saving the new image
     
     #objects = results[0].to_json()
     objects = [] 
@@ -224,3 +227,25 @@ def heatmap_image(data, video_name: str):
     overlay = cv2.addWeighted(frame_x, beta, heatmap_color, alpha, 0)
 
     return overlay
+
+@app.post("/train") # api endpoint
+async def train_model(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
+    if not file.filename.endswith(('.yaml', '.yml')):
+        return {"error": "Invalid file type. Only YAML files are allowed."}
+    
+    # saving the uploaded file 
+    folder_location = Path("train_data")
+    folder_location.mkdir(parents=True, exist_ok=True)
+    file_location = Path(folder_location / file.filename)
+    with open(file_location, "wb") as f: # w: for write, b: for binary
+        f.write(await file.read()) # takes bytes from read and writes to the file
+    
+    # function to train the model
+    background_tasks.add_task(train, file_location)
+    # results = train(file_location)
+
+@app.get("/test")
+def testing():
+    model = YOLO('models/yolov8n_custom/weights/best.pt')
+    results = model.val(data="train_data/data.yaml")
+    return {"message": "Testing completed", "metrics": results.results_dict}
