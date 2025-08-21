@@ -206,7 +206,7 @@ __marimo__/
 yolov8n.pt
 
 # image directories
-image_detection/
+images/
 
 # video directories
 videos/

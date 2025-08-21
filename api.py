@@ -19,7 +19,9 @@ async def upload_file(file: UploadFile = File(...)):
     
     # saving the uploaded file 
     #global file_location
-    file_location = Path(file.filename)
+    folder_location = Path("images/original")
+    folder_location.mkdir(parents=True, exist_ok=True)
+    file_location = Path(folder_location / file.filename)
     with open(file_location, "wb") as f: # w: for write, b: for binary
         f.write(await file.read()) # takes bytes from read and writes to the file
 
@@ -34,7 +36,7 @@ async def detection(image_path: Path, image_name: str):
     # model = YOLO("yolov8n.pt") # trained with coco8.yaml dataset
     # results = model(image_path) # detecting; if save=True -> saved in runs/predict
     model = YOLO("models/yolov8n_custom/weights/best.pt") # trained with custom dataset
-    results = model.predict(source = image_path, save=True, save_dir="image_detection")
+    results = model.predict(source = image_path, save=True, project="images", name="detect", exist_ok=True) # detecting; if save=True -> saved in runs/predict
     results[0].show() # showing the new image
     # results[0].save(filename=f"detection_{image_name}") # saving the new image
     
@@ -65,7 +67,7 @@ async def upload_file(file: UploadFile = File(...)):
         return {"error": "Invalid file type. Only mp4 and mjepg files are allowed."}
     
     # saving the uploaded file 
-    folder_location = Path("videos")
+    folder_location = Path("videos/original")
     folder_location.mkdir(parents=True, exist_ok=True)
     file_location = Path(folder_location / file.filename)
     with open(file_location, "wb") as f: # w: for write, b: for binary
@@ -85,7 +87,7 @@ async def upload_file(file: UploadFile = File(...)):
 async def vid_detection(video_path: Path, video_name: str, fps: int):
     # model
     model = YOLO("yolov8n.pt") # trained with coco8.yaml dataset
-    results = model.track(video_path, stream=True, tracker="botsort.yaml", save=True, save_frames=True, project=".", name="detect", exist_ok=True) # detecting
+    results = model.track(video_path, stream=True, tracker="botsort.yaml", save=True, save_frames=True, project="videos", name="detect", exist_ok=True) # detecting
     # tracker to track the same object accross frames and not give a new id
 
     # saving video data frame by frame
@@ -124,7 +126,7 @@ async def vid_detection(video_path: Path, video_name: str, fps: int):
         framenb += 1
 
     video_name_without_ext = video_name.split(".")[0] # remove file extension
-    json_path = Path(".") / "detect" / f"{video_name_without_ext}.json" # save json in the same directory as the video
+    json_path = Path("videos") / "detect" / f"{video_name_without_ext}.json" # save json in the same directory as the video
     
     # save the objects detected in a json file
     objects_detected = {
@@ -146,7 +148,7 @@ async def vid_detection(video_path: Path, video_name: str, fps: int):
     } # lbl: unique labels { no duplication }, x: labels with the same label (lbl) 
 
     # saving the summary to a json file
-    summary_path = Path(".") / "detect" / f"{video_name_without_ext}_summary.json"
+    summary_path = Path("videos") / "detect" / f"{video_name_without_ext}_summary.json"
     try:
         with open(summary_path, "w") as f:
             json.dump(summary, f, indent=4) 
