@@ -19,8 +19,9 @@ def train(yaml_file: Path):
     results = model.train(
         data=str(yaml_file),
         imgsz=640,
-        epochs=50,
+        epochs=10,
         batch=8,
+        device='0', 
         project="models",
         name='yolov8n_custom'
     )
