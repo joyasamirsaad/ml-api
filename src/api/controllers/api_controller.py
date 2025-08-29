@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, File, UploadFile
 from application.services import application_service
 
 router = APIRouter()
@@ -18,11 +18,21 @@ def train(model: str):
     return {"model": model, "status": result}
 
 @router.post("/inference/{model}")
-async def inference(model: str, image_path: str):
-    result = application_service.inference(model, image_path)
+async def inference(model: str, file: UploadFile = File(...)):
+    result = await application_service.inference(model, file)
     return {"model": model, "predictions": result}
 
-@router.post("/fine-tune/{model}")
-def fine_tune(model: str):
-    result = application_service.fine_tune(model)
-    return {"model": model, "status": result}   
+@router.post("/metrics")
+async def upload_metrics(file: UploadFile = File(...)):
+    result = await application_service.metrics(file)
+    return result
+
+@router.post("/augmentation")
+async def augmentation(file: UploadFile = File(...)):
+    result = await application_service.augmentation(file)
+    return result
+
+@router.post("/heatmap")
+async def heatmap(file: UploadFile = File(...)):
+    result = await application_service.heatmap(file)
+    return result

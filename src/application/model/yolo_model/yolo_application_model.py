@@ -7,7 +7,7 @@ def train(yaml_file: Path):
     # Train model
     return train_model(yaml_file)
 
-async def inference(file: UploadFile = File(...)):
+async def inference(file: UploadFile):
     # Save uploaded file 
     if not file.filename.endswith(('.png', '.jpg', '.jpeg')): 
         return {"error": "Invalid file type. Only PNG and JPG files are allowed."}
