@@ -29,7 +29,7 @@ async def heatmap(file: UploadFile):
 
 def heatmap_image(data, video_name: str):
     #frame_x = cv2.imread(f"detect/{video_name}_frames/1.jpg")
-    frame_x = cv2.imread(str(sorted(Path(f"detect/{video_name}_frames").glob("*.jpg"))[0]))  # reading the first frame of the video
+    frame_x = cv2.imread(str(sorted(Path(f"videos/detect/{video_name}_frames").glob("*.jpg"))[0]))  # reading the first frame of the video
     video_height, video_width = frame_x.shape[:2] 
     # 2D array for heatmap, initializing heatmap array with zeros
     heatmap_data = np.zeros((video_height, video_width), dtype=np.float32)

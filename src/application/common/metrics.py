@@ -21,7 +21,7 @@ async def metrics(file: UploadFile):
     else:
         base_folder = Path(f"metrics/plots{counter}")
         folder_location = base_folder
-        if folder_location.exists():
+        while folder_location.exists():
             counter += 1
             folder_location = Path(f"metrics/plots{counter}")
 

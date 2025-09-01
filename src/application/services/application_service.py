@@ -25,11 +25,30 @@ async def inference(model: str, file: UploadFile) -> int:
         raise ValueError(f"Unsupported model type: {model}")
     return await Models[model].inference(file)
 
-async def metrics(file: UploadFile) -> int:
+def test(model: str, dataset_path: str) -> int:
+    m = None
+    for m in Models:
+        if m in model.lower():
+            model = m
+            break
+    if m is None: raise ValueError(f"Unsupported model type: {model}")
+    return Models[m].test(model, dataset_path)
+
+async def plot_metrics(file: UploadFile) -> int:
     return await metrics(file)
 
-async def augmentation(file: UploadFile) -> int:
+async def dataset_augmentation(file: UploadFile) -> int:
     return await augmentation(file)
 
-async def heatmap(file: UploadFile) -> int:
+async def fine_tune(model: str, file: UploadFile) -> int:
+    if model not in Models:
+        raise ValueError(f"Unsupported model type: {model}")
+    return await Models[model].fine_tune(model, file)
+
+async def generate_heatmap(file: UploadFile) -> int:
     return await heatmap(file)
+
+async def video_inference(model: str, file: UploadFile) -> int:
+    if model not in Models:
+        raise ValueError(f"Unsupported model type: {model}")
+    return await Models[model].video_inference(model, file)

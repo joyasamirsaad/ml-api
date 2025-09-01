@@ -13,7 +13,8 @@ class EfficientDetDataModule(LightningDataModule):
                  train_transforms=None,
                  valid_transforms=None,
                  num_workers=4,
-                 batch_size=4):
+                 batch_size=4,
+                 subset: float=None):
         """
         train_dataset_adaptor: CarsDatasetAdaptor instance for training
         validation_dataset_adaptor: CarsDatasetAdaptor instance for validation
@@ -29,14 +30,25 @@ class EfficientDetDataModule(LightningDataModule):
         self.valid_tfms = valid_transforms or get_valid_transforms(target_img_size=384)
         self.num_workers = num_workers
         self.batch_size = batch_size
+        self.subset = subset
 
     # Dataset methods
     def train_dataset(self) -> EfficientDetDataset:
-        return EfficientDetDataset(dataset_adaptor=self.train_ds, transforms=self.train_tfms)
-
+        ds = EfficientDetDataset(dataset_adaptor=self.train_ds, transforms=self.train_tfms)
+        if self.subset is not None and 0 < self.subset < 1:
+            n = int(len(ds) * self.subset)
+            indices = torch.randperm(len(ds))[:n]
+            ds = torch.utils.data.Subset(ds, indices)
+        return ds
+    
     def val_dataset(self) -> EfficientDetDataset:
-        return EfficientDetDataset(dataset_adaptor=self.valid_ds, transforms=self.valid_tfms)
-
+        ds = EfficientDetDataset(dataset_adaptor=self.valid_ds, transforms=self.valid_tfms)
+        if self.subset is not None and 0 < self.subset < 1:
+            n = int(len(ds) * self.subset)
+            indices = torch.randperm(len(ds))[:n]
+            ds = torch.utils.data.Subset(ds, indices)
+        return ds
+    
     # DataLoader methods
     def train_dataloader(self) -> DataLoader:
         return DataLoader(

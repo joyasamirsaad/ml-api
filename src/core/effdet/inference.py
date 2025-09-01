@@ -1,54 +1,125 @@
-# 6. inference.py: contains functions for making predictions using the trained model, handling both image inputs and tensor inputs.
+# inference.py: functions for making predictions with EfficientDet
 from fastcore.dispatch import typedispatch
-from typing import List
+from effdet.bench import DetBenchPredict
+from ensemble_boxes import weighted_boxes_fusion as run_wbf
+from typing import List, Tuple
 import torch
 import numpy as np
+from PIL import Image
 
-@typedispatch
-def predict(self, images: List):
-    """
-    For making predictions from images
-    Args:
-        images: a list of PIL images
 
-    Returns: a tuple of lists containing bboxes, predicted_class_labels, predicted_class_confidences
+class EfficientDetInference:
+    def __init__(self, model, device, inference_tfms, img_size: int,
+                 prediction_confidence_threshold: float = 0.25,
+                 wbf_iou_threshold: float = 0.5):
+        """
+        Args:
+            model: Trained EfficientDet model wrapper
+            device: Torch device ("cuda" or "cpu")
+            inference_tfms: Albumentations transform for preprocessing images
+            img_size: Input size used for training
+            prediction_confidence_threshold: Score threshold for keeping predictions
+            wbf_iou_threshold: IoU threshold for Weighted Boxes Fusion
+        """
+        self.model = model
+        self.device = device
+        self.inference_tfms = inference_tfms
+        self.img_size = img_size
+        self.prediction_confidence_threshold = prediction_confidence_threshold
+        self.wbf_iou_threshold = wbf_iou_threshold
+        self._predict_model = None  # Lazy init
 
-    """
-    image_sizes = [(image.size[1], image.size[0]) for image in images]
-    images_tensor = torch.stack(
-        [
+    @typedispatch
+    def predict(self, images: List[Image.Image]) -> Tuple[list, list, list]:
+        """
+        Run inference on a list of PIL images.
+        Returns: (bboxes, labels, scores) as lists per image
+        """
+        image_sizes = [(img.height, img.width) for img in images]
+
+        images_tensor = torch.stack([
             self.inference_tfms(
-                image=np.array(image, dtype=np.float32),
+                image=np.array(img, dtype=np.float32),
                 labels=np.ones(1),
-                bboxes=np.array([[0, 0, 1, 1]]),
+                bboxes=np.array([[0, 0, 1, 1]])
             )["image"]
-            for image in images
-        ]
-    )
+            for img in images
+        ])
 
-    return self._run_inference(images_tensor, image_sizes)
+        return self._run_inference(images_tensor, image_sizes)
 
-@typedispatch
-def predict(self, images_tensor: torch.Tensor):
-    """
-    For making predictions from tensors returned from the model's dataloader
-    Args:
-        images_tensor: the images tensor returned from the dataloader
+    @typedispatch
+    def predict(self, images_tensor: torch.Tensor) -> Tuple[list, list, list]:
+        """
+        Run inference on batched tensor images (N, 3, H, W).
+        """
+        if images_tensor.ndim == 3:
+            images_tensor = images_tensor.unsqueeze(0)
 
-    Returns: a tuple of lists containing bboxes, predicted_class_labels, predicted_class_confidences
+        if (images_tensor.shape[-1] != self.img_size or
+            images_tensor.shape[-2] != self.img_size):
+            raise ValueError(
+                f"Expected tensors of shape (N, 3, {self.img_size}, {self.img_size})"
+            )
 
-    """
-    if images_tensor.ndim == 3:
-        images_tensor = images_tensor.unsqueeze(0)
-    if (
-        images_tensor.shape[-1] != self.img_size
-        or images_tensor.shape[-2] != self.img_size
-    ):
-        raise ValueError(
-            f"Input tensors must be of shape (N, 3, {self.img_size}, {self.img_size})"
+        num_images = images_tensor.shape[0]
+        image_sizes = [(self.img_size, self.img_size)] * num_images
+
+        return self._run_inference(images_tensor, image_sizes)
+
+    # ---------------- Internal helpers ---------------- #
+
+    def _init_predict_model(self):
+        if self._predict_model is None:
+            self._predict_model = DetBenchPredict(
+                self.model.model, self.model.config
+            ).to(self.device)
+            self._predict_model.eval()
+
+    def _run_inference(self, images_tensor, image_sizes):
+        self._init_predict_model()
+
+        detections = self._predict_model(images_tensor.to(self.device))
+
+        bboxes, scores, labels = self._postprocess_detections(detections)
+        scaled_bboxes = self._rescale_bboxes(bboxes, image_sizes)
+
+        return scaled_bboxes, labels, scores
+
+    def _postprocess_detections(self, detections):
+        preds = []
+        for i in range(detections.shape[0]):
+            preds.append(self._filter_single_prediction(detections[i]))
+
+        bboxes, scores, labels = run_wbf(
+            preds,
+            image_size=self.img_size,
+            iou_thr=self.wbf_iou_threshold
         )
+        return bboxes, scores, labels
 
-    num_images = images_tensor.shape[0]
-    image_sizes = [(self.img_size, self.img_size)] * num_images
+    def _filter_single_prediction(self, detections):
+        det = detections.detach().cpu().numpy()
+        boxes, scores, classes = det[:, :4], det[:, 4], det[:, 5].astype(int)
 
-    return self._run_inference(images_tensor, image_sizes)
+        keep = np.where(scores > self.prediction_confidence_threshold)[0]
+        return {
+            "boxes": boxes[keep],
+            "scores": scores[keep],
+            "classes": classes[keep],
+        }
+
+    def _rescale_bboxes(self, bboxes, image_sizes):
+        scaled = []
+        for boxes, (im_h, im_w) in zip(bboxes, image_sizes):
+            if len(boxes) > 0:
+                boxes = np.array(boxes) * [
+                    im_w / self.img_size,
+                    im_h / self.img_size,
+                    im_w / self.img_size,
+                    im_h / self.img_size,
+                ]
+                scaled.append(boxes.tolist())
+            else:
+                scaled.append([])
+        return scaled
