@@ -1,6 +1,6 @@
 from pathlib import Path
-from core.yolo.yolo_train import train as train_model
-from core.yolo.yolo_inference import inference as run_inference
+from src.core.yolo.yolo_train import train as train_model
+from src.core.yolo.yolo_inference import inference as run_inference
 from fastapi import UploadFile, File
 
 def train(yaml_file: Path):

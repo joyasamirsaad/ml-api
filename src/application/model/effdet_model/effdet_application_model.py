@@ -1,10 +1,10 @@
 import torch
-from core.effdet.dataset_adaptor import CarsDatasetAdaptor
-from core.effdet.datamodule import EfficientDetDataModule
-from core.effdet.transformations import get_train_transforms, get_valid_transforms
-from core.effdet.model_1 import EfficientDetModel
+from src.core.effdet.dataset_adaptor import CarsDatasetAdaptor
+from src.core.effdet.datamodule import EfficientDetDataModule
+from src.core.effdet.transformations import get_train_transforms, get_valid_transforms
+from src.core.effdet.model_1 import EfficientDetModel
 import pytorch_lightning as pl
-from core.effdet.model_predict import EfficientDetModelMixin
+from src.core.effdet.model_predict import EfficientDetModelMixin
 from PIL import Image
 import matplotlib.pyplot as plt
 import cv2

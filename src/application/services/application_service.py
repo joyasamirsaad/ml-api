@@ -4,11 +4,11 @@ Application services:
 - They call domain logic if necessary, and return values to the API layer.
 """
 from fastapi import UploadFile
-from application.model.yolo_model import yolo_application_model 
-from application.model.effdet_model import effdet_application_model 
-from application.common.metrics import metrics
-from application.common.augmentation import augmentation
-from application.common.heatmap import heatmap
+from src.application.model.yolo_model import yolo_application_model 
+from src.application.model.effdet_model import effdet_application_model 
+from src.application.common.metrics import metrics
+from src.application.common.augmentation import augmentation
+from src.application.common.heatmap import heatmap
 
 Models = {
     "yolo": yolo_application_model,

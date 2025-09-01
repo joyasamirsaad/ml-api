@@ -2,7 +2,7 @@
 from torch.utils.data import Dataset
 import torch
 import numpy as np
-from core.effdet.transformations import get_train_transforms, get_valid_transforms
+from src.core.effdet.transformations import get_train_transforms, get_valid_transforms
 
 class EfficientDetDataset(Dataset):
     def __init__(self, dataset_adaptor, transforms=None):

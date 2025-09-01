@@ -1,16 +1,7 @@
 from fastapi import APIRouter, File, UploadFile
-from application.services import application_service
+from src.application.services import application_service
 
 router = APIRouter()
-
-@router.get("/ping")
-def ping():
-    return {"message": "pong"}
-
-@router.get("/compute/{x}")
-def compute(x: int):
-    result = application_service.square_number(x)
-    return {"input": x, "result": result}
  
 @router.post("/train/{model}")
 def train(model: str):
@@ -36,3 +27,4 @@ async def augmentation(file: UploadFile = File(...)):
 async def heatmap(file: UploadFile = File(...)):
     result = await application_service.heatmap(file)
     return result
+ # still have video, test and fine tuning endpoints to do

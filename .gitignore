@@ -219,7 +219,7 @@ heatmaps/
 # model training
 dataset/
 dataset1/
-effdet_dataset/
+data/
 dataset_augmented/
 train_data/
 models/

@@ -1,8 +1,8 @@
 # 6. model_1.py: defines a PyTorch Lightning Module that encapsulates the EfficientDet model, training, and validation logic.
 import torch
 from pytorch_lightning import LightningModule
-from core.effdet.model import create_model
-from core.effdet.transformations import get_valid_transforms
+from src.core.effdet.model import create_model
+from src.core.effdet.transformations import get_valid_transforms
 
 
 class EfficientDetModel(LightningModule):
