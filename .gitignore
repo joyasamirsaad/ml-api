@@ -219,6 +219,7 @@ heatmaps/
 # model training
 dataset/
 dataset1/
+data/
 dataset_augmented/
 train_data/
 models/
