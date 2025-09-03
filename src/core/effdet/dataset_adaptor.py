@@ -54,7 +54,7 @@ class CarsDatasetAdaptor:
         image, bboxes, class_labels, image_id = self.get_image_and_labels_by_idx(index)
         print(f"image_id: {image_id}")
 
-        # Convert PIL → OpenCV
+        # Convert PIL to OpenCV
         image_cv = np.array(image)
         if image_cv.shape[-1] == 3:
             image_cv = cv2.cvtColor(image_cv, cv2.COLOR_RGB2BGR)

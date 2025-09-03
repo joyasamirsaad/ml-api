@@ -26,8 +26,8 @@ class EfficientDetDataModule(LightningDataModule):
         super().__init__()
         self.train_ds = train_dataset_adaptor
         self.valid_ds = validation_dataset_adaptor
-        self.train_tfms = train_transforms or get_train_transforms(target_img_size=384)
-        self.valid_tfms = valid_transforms or get_valid_transforms(target_img_size=384)
+        self.train_tfms = train_transforms or get_train_transforms(target_img_size=512)
+        self.valid_tfms = valid_transforms or get_valid_transforms(target_img_size=512)
         self.num_workers = num_workers
         self.batch_size = batch_size
         self.subset = subset

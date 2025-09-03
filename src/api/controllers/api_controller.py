@@ -4,9 +4,9 @@ from src.application.services import application_service
 router = APIRouter()
  
 @router.post("/train/{model}")
-def train(model: str):
-    result = application_service.train(model)
-    return {"model": model, "status": result}
+async def train(model: str, file: UploadFile = File(...)):
+    result = await application_service.train(model, file)
+    #return {"model": model, "status": result}
 
 @router.post("/inference/{model}")
 async def inference(model: str, file: UploadFile = File(...)):
@@ -42,4 +42,3 @@ async def heatmap(file: UploadFile = File(...)):
 async def video_inference(model: str, file: UploadFile = File(...)):
     result = await application_service.video_inference(model, file)
     return result
- # still have video, test and fine tuning endpoints to do for effddet

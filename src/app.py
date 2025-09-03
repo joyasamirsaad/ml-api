@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from src.api.controllers import api_controller
 import uvicorn
 
-app = FastAPI(title="Onion Architecture Example")
+app = FastAPI(title="Onion Architecture App")
 
 # Include routes from the API controller
 app.include_router(api_controller.router, prefix="/api", tags=["API"])

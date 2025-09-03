@@ -1,5 +1,6 @@
 # inference.py: functions for making predictions with EfficientDet
-from fastcore.dispatch import typedispatch
+#from fastcore.dispatch import typedispatch
+from plum import dispatch as typedispatch
 from effdet.bench import DetBenchPredict
 from ensemble_boxes import weighted_boxes_fusion as run_wbf
 from typing import List, Tuple
@@ -67,7 +68,6 @@ class EfficientDetInference:
 
         return self._run_inference(images_tensor, image_sizes)
 
-    # ---------------- Internal helpers ---------------- #
 
     def _init_predict_model(self):
         if self._predict_model is None:

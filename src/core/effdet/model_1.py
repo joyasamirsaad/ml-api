@@ -34,10 +34,6 @@ class EfficientDetModel(LightningModule):
     def configure_optimizers(self):
         return torch.optim.AdamW(self.model.parameters(), lr=self.lr)
 
-    # training_step and validation_step remain unchanged
-
-
-
     def training_step(self, batch, batch_idx):
         images, targets, image_ids = batch
         losses = self.model(images, targets)

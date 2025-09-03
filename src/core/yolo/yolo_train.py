@@ -3,10 +3,9 @@ from pathlib import Path
 from ultralytics import YOLO
 import yaml
  
-# Load the model.
+# load model
 model = YOLO('yolov8n.pt')
  
-# Training.
 def train(yaml_file: Path):
     print(f"Training model with dataset: {yaml_file}")
     # reading file to check dataset path existance
