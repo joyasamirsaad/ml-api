@@ -223,6 +223,7 @@ data/
 dataset_augmented/
 train_data/
 models/
+checkpoints/
 lightning_logs/
 validation/
 metrics/

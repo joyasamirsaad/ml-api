@@ -156,12 +156,6 @@ async def fine_tune(model_name: str, file: UploadFile):
         return {"error": "Invalid file type. Only YAML files are allowed."}
     if not model_name and not Path(f'models/{model_name}/weights/best.ckpt').exists():
         return {"error": "Model not found."}
-    
-    file_location = Path("train_data") / file.filename
-
-    # getting dataset config 
-    with open(file_location, "r") as f:
-        data_config = yaml.safe_load(f)
 
     def objective(trial):
         # hyperparameters
@@ -169,18 +163,19 @@ async def fine_tune(model_name: str, file: UploadFile):
         lrf = trial.suggest_float("lrf", 0.1, 0.9)
 
         small_datamodule = EfficientDetDataModule(
-            train_dataset_adaptor=data_config["train"],
-            validation_dataset_adaptor=data_config["val"],
+            train_dataset_adaptor=train_ds_adaptor,
+            validation_dataset_adaptor=valid_ds_adaptor,
             batch_size=4,
             num_workers=2,
-            subset=0.1  # use 10% of dataset
+            subset=200 / len(train_ds_adaptor)
         )
 
         path_to_checkpoint = Path(find_latest_checkpoint())
         # load model with suggested hyperparams
         model = EfficientDetModel.load_from_checkpoint(
             path_to_checkpoint,
-            num_classes=6,
+            num_classes=7,
+            strict = False,
             lr0=lr0,
             lrf=lrf
         )
@@ -190,12 +185,15 @@ async def fine_tune(model_name: str, file: UploadFile):
             max_epochs=3,
             accelerator="gpu" if torch.cuda.is_available() else "cpu",
             logger=False,
-            enable_checkpointing=False
+            enable_checkpointing=True,
+            log_every_n_steps=10,
+            precision="16-mixed",      
+            accumulate_grad_batches=4
         )
 
         # train and validate
         trainer.fit(model, datamodule=small_datamodule)  
-        val_loss = trainer.callback_metrics["val_loss"].item()
+        val_loss = trainer.callback_metrics["valid_loss"].item()
 
         return val_loss
 
@@ -203,6 +201,18 @@ async def fine_tune(model_name: str, file: UploadFile):
     study.optimize(objective, n_trials=20)  
 
     best_hparams = study.best_params
+
+    path_to_checkpoint  = Path(find_latest_checkpoint())
+    model = EfficientDetModel.load_from_checkpoint(
+        path_to_checkpoint,
+        num_classes=7,
+        lr0=best_hparams["lr0"],
+        lrf=best_hparams["lrf"]
+    )
+    trainer = pl.Trainer(max_epochs=20, gpus=1)
+    trainer.fit(model, datamodule=data_module)
+    trainer.save_checkpoint("lightning_logs/best_hypertuned.ckpt")
+
 
     return {
         "message": "Fine-tuning completed",
@@ -235,7 +245,11 @@ async def vid_detection(video_path: Path, video_name: str, fps: int):
     path_to_checkpoint = Path(find_latest_checkpoint())
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    model = EfficientDetModel.load_from_checkpoint(path_to_checkpoint)
+    model = EfficientDetModel.load_from_checkpoint(
+        path_to_checkpoint,
+        num_classes=7,
+        strict=False
+    )
     model.to(device).eval()
 
     inference_engine = EfficientDetInference(
