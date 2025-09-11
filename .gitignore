@@ -204,6 +204,10 @@ __marimo__/
 
 # model
 yolov8n.pt
+yolo11n.pt
+
+# image directories
+images/
 
 # video directories
 videos/
@@ -211,3 +215,16 @@ detect/
 
 # heatmap directories
 heatmaps/
+
+# model training
+dataset/
+dataset1/
+data/
+dataset_augmented/
+train_data/
+models/
+checkpoints/
+lightning_logs/
+validation/
+metrics/
+tuning/
