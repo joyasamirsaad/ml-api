@@ -40,7 +40,7 @@ async def detection(image_path: Path, image_name: str):
     # model
     # model = YOLO("yolov8n.pt") # trained with coco8.yaml dataset
     # results = model(image_path) # detecting; if save=True -> saved in runs/predict
-    model = YOLO("models/yolov8n_custom/weights/best.pt") # trained with custom dataset
+    model = YOLO("models/yolov8n_custom2/weights/best.pt") # trained with custom dataset
     results = model.predict(source = image_path, save=True, project="images", name="detect", exist_ok=True) # detecting; if save=True -> saved in runs/predict
     results[0].show() # showing the new image
     # results[0].save(filename=f"detection_{image_name}") # saving the new image
@@ -299,13 +299,13 @@ async def metrics(file: UploadFile = File(...)):
     if "tune" in file.filename:
         base_folder = Path(f"metrics/tuning{c}")
         folder_location = base_folder
-        if folder_location.exists():
+        while folder_location.exists():
             c += 1
             folder_location = Path(f"metrics/tuning{c}")
     else:
         base_folder = Path(f"metrics/plots{counter}")
         folder_location = base_folder
-        if folder_location.exists():
+        while folder_location.exists():
             counter += 1
             folder_location = Path(f"metrics/plots{counter}")
 
@@ -408,4 +408,32 @@ async def fine_tuning(model_name: str, file: UploadFile = File(...)):
     with open("tuning/tune/best_hyperparameters.yaml") as f:
         best_hyperparams = yaml.safe_load(f)
     return {"message": "Fine-tuning completed", "best_hyperparameters": best_hyperparams}
+
+@app.post("/retrain") # api endpoint
+async def retrain(model_name: str, file: UploadFile = File(...)):
+    if not file.filename.endswith(('.yaml')):
+        return {"error": "Invalid file type. Only YAML files are allowed."}
+    if not model_name and not Path(f'models/{model_name}/weights/best.pt').exists():
+        return {"error": "Model not found."}
+    
+    # getting the best hyperparameters from tuning
+    with open("tuning/tune/best_hyperparameters.yaml") as f:
+        best_hyperparams = yaml.safe_load(f)
+    
+    # function to retrain the model
+    model = YOLO(f'models/{model_name}/weights/best.pt')
+    results = model.train(
+        data=f"train_data/{file.filename}",
+        imgsz=640,
+        epochs=10,
+        batch=8,
+        lr0=best_hyperparams.get("lr0", 0.01),
+        lrf=best_hyperparams.get("lrf", 0.1),
+        device='0', 
+        project="models",
+        name=f'{model_name}_retrained',
+        exist_ok=True
+    )
+
+    return {"message": "Retraining completed", "metrics": results.results_dict}
 
